@@ -1,5 +1,5 @@
 #include <cstdio>
-#include <glew.h>
+#include <gl/glew.h>
 
 #include "engine.h"
 

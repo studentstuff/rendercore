@@ -4,6 +4,12 @@
 *.o
 *.obj
 
+# Solution files
+*.sln
+*db
+*vcxproj
+*.filters
+
 # Precompiled Headers
 *.gch
 *.pch
@@ -27,3 +33,6 @@
 *.exe
 *.out
 *.app
+
+Deps/
+Debug/

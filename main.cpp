@@ -1,124 +1,86 @@
-#include <glew.h>
-
+#include <gl\glew.h>
 #include <glm.hpp>
+#include <gtc/type_ptr.hpp>
 #include <gtc/matrix_transform.hpp>
 
-#include <memory>
+#include "Engine.h"
+#include "utils.h"
 
-#include "engine.h"
-#include "render.h"
+#define GLM_FORCE_RADIANS
+#undef GL_OFFSET
+#define GL_OFFSET(x) ((const GLvoid *)(x))
 
-struct Vertex
-{
-	glm::vec3 pos;
-	
-	Vertex() {}
-	
-	Vertex(glm::vec3 p)
-	{
-		pos = p;
-	}
-};
+SDL_Window* _window = nullptr;
+SDL_GLContext _context = nullptr;
 
-const char* vsSource = R"(
-						#version 330 core
-						uniform mat4 MVP;
-						in vec3 position;
-						void main(void)
-						{
-							gl_Position = MVP * vec4(position, 1.0);
-						}
-					)";
-
-const char* fsSource = R"(
-						#version 330 core
-						uniform sampler2D colorTexture;
-						out vec4 color;
-						void main(void)
-						{
-							color = vec4 (1.0, 1.0, 1.0, 1.0);
-						}
-					)";
-
-glm::vec2 SCREEN_SIZE(800, 600);
+glm::vec2 SCREEN_SIZE(1024, 768);
 
 glm::mat4 projectionMatrix;
 glm::mat4 viewMatrix;
 glm::mat4 modelMatrix;
-
 glm::mat4 MVP;
 
-static const char* windowName = "Engine";
+static GLuint colorTexture = 0;
 
-std::unique_ptr<Engine> eng;
-Render::ProgramPtr program;
-Render::MeshRenderObjectPtr mesh;
-
-Render::MeshRenderObjectPtr CreateMesh(GLenum type, const void* vertData, size_t verticesSize, size_t vertexSize, const void* indData, size_t indiciesSize, size_t indCount)
+struct Vertex
 {
-	return std::make_unique<Render::MeshRenderObject>(type, vertData, verticesSize, vertexSize, indData, indiciesSize, indCount);
-}
+	glm::vec3 m_pos;
+	glm::vec2 m_tex;
+
+	Vertex() {}
+
+	Vertex(glm::vec3 pos, glm::vec2 tex)
+	{
+		m_pos = pos;
+		m_tex = tex;
+	}
+};
 
 int main(int argc, char* args[])
 {
-	eng = std::make_unique<Engine>(windowName, SCREEN_SIZE.x, SCREEN_SIZE.y);
-
-	program = Render::CreateProgram(vsSource, fsSource);
-	program->Use();
-
-	// Setup matrix
+	Engine eng("Engine", SCREEN_SIZE.x, SCREEN_SIZE.y);
 
 	const float aspectRatio = SCREEN_SIZE.x / SCREEN_SIZE.y;
 	projectionMatrix = glm::perspective(45.0f, aspectRatio, 1.0f, 10.0f);
 
-	modelMatrix = glm::mat4(1.0f);
-
-	viewMatrix = glm::lookAt(
-		glm::vec3(0, 0, 3), // Camera is at (4,3,3), in World Space
-		glm::vec3(0, 0, 0), // and looks at the origin
-		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
-	);
-
-	// Vertices
-
 	const float s = 1.0f;
-	const Vertex cubeVertices[] =
+	const Vertex vertices[] =
 	{
 		// front
-		Vertex(glm::vec3(-s, s, s)),
-		Vertex(glm::vec3(s, s, s)),
-		Vertex(glm::vec3(s,-s, s)),
-		Vertex(glm::vec3(-s,-s, s)),
+		Vertex(glm::vec3(-s, s, s), glm::vec2(0.0f, 1.0f)),
+		Vertex(glm::vec3(s, s, s), glm::vec2(1.0f, 1.0f)),
+		Vertex(glm::vec3(s,-s, s), glm::vec2(1.0f, 0.0f)),
+		Vertex(glm::vec3(-s,-s, s), glm::vec2(0.0f, 0.0f)),
 
 		// back
-		Vertex(glm::vec3(s, s,-s)),
-		Vertex(glm::vec3(-s, s,-s)),
-		Vertex(glm::vec3(-s,-s,-s)),
-		Vertex(glm::vec3(s,-s,-s)),
+		Vertex(glm::vec3(s, s,-s), glm::vec2(0.0f, 1.0f)),
+		Vertex(glm::vec3(-s, s,-s), glm::vec2(1.0f, 1.0f)),
+		Vertex(glm::vec3(-s,-s,-s), glm::vec2(1.0f, 0.0f)),
+		Vertex(glm::vec3(s,-s,-s), glm::vec2(0.0f, 0.0f)),
 
 		// top
-		Vertex(glm::vec3(-s, s,-s)),
-		Vertex(glm::vec3(s, s,-s)),
-		Vertex(glm::vec3(s, s, s)),
-		Vertex(glm::vec3(-s, s, s)),
+		Vertex(glm::vec3(-s, s,-s), glm::vec2(0.0f, 1.0f)),
+		Vertex(glm::vec3(s, s,-s), glm::vec2(1.0f, 1.0f)),
+		Vertex(glm::vec3(s, s, s), glm::vec2(1.0f, 0.0f)),
+		Vertex(glm::vec3(-s, s, s), glm::vec2(0.0f, 0.0f)),
 
 		// bottom
-		Vertex(glm::vec3(s,-s,-s)),
-		Vertex(glm::vec3(-s,-s,-s)),
-		Vertex(glm::vec3(-s,-s, s)),
-		Vertex(glm::vec3(s,-s, s)),
+		Vertex(glm::vec3(s,-s,-s), glm::vec2(0.0f, 1.0f)),
+		Vertex(glm::vec3(-s,-s,-s), glm::vec2(1.0f, 1.0f)),
+		Vertex(glm::vec3(-s,-s, s), glm::vec2(1.0f, 0.0f)),
+		Vertex(glm::vec3(s,-s, s), glm::vec2(0.0f, 0.0f)),
 
 		// left
-		Vertex(glm::vec3(-s, s,-s)),
-		Vertex(glm::vec3(-s, s, s)),
-		Vertex(glm::vec3(-s,-s, s)),
-		Vertex(glm::vec3(-s,-s,-s)),
+		Vertex(glm::vec3(-s, s,-s), glm::vec2(0.0f, 1.0f)),
+		Vertex(glm::vec3(-s, s, s), glm::vec2(1.0f, 1.0f)),
+		Vertex(glm::vec3(-s,-s, s), glm::vec2(1.0f, 0.0f)),
+		Vertex(glm::vec3(-s,-s,-s), glm::vec2(0.0f, 0.0f)),
 
 		// right
-		Vertex(glm::vec3(s, s, s)),
-		Vertex(glm::vec3(s, s,-s)),
-		Vertex(glm::vec3(s,-s,-s)),
-		Vertex(glm::vec3(s,-s, s)),
+		Vertex(glm::vec3(s, s, s), glm::vec2(0.0f, 1.0f)),
+		Vertex(glm::vec3(s, s,-s), glm::vec2(1.0f, 1.0f)),
+		Vertex(glm::vec3(s,-s,-s), glm::vec2(1.0f, 0.0f)),
+		Vertex(glm::vec3(s,-s, s), glm::vec2(0.0f, 0.0f)),
 	};
 
 	const uint32_t cubeIndices[] =
@@ -131,26 +93,93 @@ int main(int argc, char* args[])
 		20,23,21, 21,23,22  // right
 	};
 
-	mesh = CreateMesh(GL_TRIANGLES, cubeVertices, sizeof(cubeVertices), sizeof(Vertex), cubeIndices, sizeof(cubeIndices), 36);
+	modelMatrix = glm::mat4(1.0f);
+	viewMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0.0, 0.5f, -7.0f));
 
-	GLint mvpUniformLoc = program->GetUniformLoc("MVP");
+	GLuint glVao;
+	glGenVertexArrays(1, &glVao);
+	glBindVertexArray(glVao);
 
-	bool running = true;
+	GLuint glVbo;
+	glGenBuffers(1, &glVbo);
+	glBindBuffer(GL_ARRAY_BUFFER, glVbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	while (eng->Run())
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 5, NULL);
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 5, GL_OFFSET(sizeof(float)*3));
+
+	GLuint glIbo;
+	glGenBuffers(1, &glIbo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glIbo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), cubeIndices, GL_STATIC_DRAW);
+
+	colorTexture = TextureCreateFromTGA("texture.tga");
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, colorTexture);
+
+	const char* vsSource = R"(
+						#version 330 core
+						uniform mat4 MVP;
+						in vec3 position;
+						in vec2 uv;
+						out vec2 fragTexcoord;
+						void main(void)
+						{
+							gl_Position = MVP * vec4(position, 1.0);
+							fragTexcoord = uv;
+						}
+					)";
+
+	const char* fsSource = R"(
+						#version 330 core
+						uniform sampler2D colorTexture;
+						in vec2 fragTexcoord;
+						out vec4 color;
+						void main(void)
+						{
+							color = texture(colorTexture, fragTexcoord);;
+						}
+					)";
+
+	GLuint vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vertexShaderID, 1, &vsSource, nullptr);
+	glCompileShader(vertexShaderID);
+
+	GLuint fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fragmentShaderID, 1, &fsSource, nullptr);
+	glCompileShader(fragmentShaderID);
+
+	GLuint glProgram = glCreateProgram();
+	glAttachShader(glProgram, vertexShaderID);
+	glAttachShader(glProgram, fragmentShaderID);
+	glLinkProgram(glProgram);
+
+	glDeleteShader(vertexShaderID);
+	glDeleteShader(fragmentShaderID);
+
+	GLint mvpUniformLoc = glGetUniformLocation(glProgram, "MVP");
+	glUniform1i(glGetUniformLocation(glProgram, "colorTexture"), 0);
+
+	while (eng.Run())
 	{
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		Render::SetProgram(program);
+		glUseProgram(glProgram);
 
 		MVP = projectionMatrix*viewMatrix*modelMatrix;
 		if (mvpUniformLoc != -1)
-			program->SetUniform(mvpUniformLoc, MVP);
+			glUniformMatrix4fv(mvpUniformLoc, 1, GL_FALSE, glm::value_ptr(MVP));
 
-		Render::SetVertexArray(mesh->vao);
-		Render::DrawIndexed(GL_TRIANGLES, mesh->indicesCount);
+		glBindVertexArray(glVao);
+		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, NULL);
+		glBindVertexArray(0);
 
-		eng->SwapBuffers();
+		glUseProgram(0);
+
+		eng.SwapBuffers();
 	}
 
 	return 0;
