@@ -9,6 +9,7 @@
 *db
 *vcxproj
 *.filters
+*.suo
 
 # Precompiled Headers
 *.gch
