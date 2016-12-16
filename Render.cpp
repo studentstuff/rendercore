@@ -2,11 +2,11 @@
 
 namespace Render
 {
-	void RenderQueue::PushRenderObj(RenderObject* p, Camera& cam)
+	void RenderQueue::PushRenderObj(RenderObject* p, glm::mat4 viewProjMat)
 	{
 		// TMP : hardcoded GatherRenderOps
 		RenderOp rop = p->rop;
-		rop.MVP = cam.projMat*cam.viewMat*p->frame.modelMatrix;
+		rop.MVP = viewProjMat*p->frame.modelMatrix;
 		rop.vao = p->glVao;
 		rop.program = p->glProgram;
 		rop.indCount = p->indCount;
@@ -45,9 +45,11 @@ namespace Render
 
 		for (auto& ro : objects)
 		{
+			glm::mat4 viewProjMat = cam.projMat * cam.viewMat;
+
 			if (cam.FrustumTest(ro))
 			{
-				rq.PushRenderObj(ro, cam);
+				rq.PushRenderObj(ro, viewProjMat);
 			}
 		}
 

@@ -62,7 +62,7 @@ namespace Render
 
 	struct RenderQueue
 	{
-		void PushRenderObj(RenderObject* p, Camera& cam);
+		void PushRenderObj(RenderObject* p, glm::mat4 viewProjMat);
 
 		void Reset();
 
