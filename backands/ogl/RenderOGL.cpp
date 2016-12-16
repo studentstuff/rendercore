@@ -1,3 +1,5 @@
+#include "Render.h"
+#include "opengl_common.h"
 
 namespace Render
 {
