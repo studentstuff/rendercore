@@ -6,15 +6,16 @@
 
 #include "Engine.h"
 #include "Render.h"
+#include "Shader.h"
 #include "utils.h"
 
 glm::vec2 SCREEN_SIZE(1024, 768);
 
 struct Scene
 {
-	void AddCube(glm::vec3 pos, GLuint glProgram)
+	void AddCube(glm::vec3 pos, ProgramPtr& program)
 	{
-		Render::RenderObject* ro = CreateCubeRO(1.0f, glProgram);
+		Render::RenderObject* ro = CreateCubeRO(1.0f, program);
 		ro->frame.modelMatrix = glm::translate(glm::mat4(1.0f), pos);
 		AddRenderObject(ro);
 	}
@@ -41,18 +42,15 @@ int main(int argc, char* args[])
 	cam.projMat = glm::perspective(45.0f, aspectRatio, 1.0f, 10.0f);
 	cam.viewMat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -7.0f));
 	
-	GLuint glTexture = CreateTexture("texture.tga");
-	GLuint glProgram = CreateProgram();
+	TexturePtr texture = CreateTexture("texture.tga");
+	ProgramPtr program = StandartShaders::DiffuseShader();
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, glGetUniformLocation(glProgram, "colorTexture"));
-
-	scene.AddCube(glm::vec3(-2.0f, 0.0f, 0.0f), glProgram);
-	scene.AddCube(glm::vec3(2.0f, 0.0f, 0.0f), glProgram);
+	scene.AddCube(glm::vec3(-2.0f, 0.0f, 0.0f), program);
+	scene.AddCube(glm::vec3(2.0f, 0.0f, 0.0f), program);
 
 	while (eng.Run())
 	{
-		Render::Clear(Render::ClearFlags::Color | Render::ClearFlags::Depth);
+		Render::Clear(ClearFlags::Color | ClearFlags::Depth);
 
 		Render::RenderAll(cam, scene.renderObjects());
 
