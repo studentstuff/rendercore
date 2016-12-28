@@ -67,7 +67,7 @@ namespace Render
 
 	ProgramPtr CreateProgram(const char* vsSource, const char* fsSource);
 	TexturePtr CreateTexture(TextureDesc& desc);
-	VertexArrayPtr CreateVertexArray(const void* vertData, size_t vertSize, const void* indData, size_t indSize, size_t indCount);
+	VertexArrayPtr CreateVertexArray(const void* vertData, size_t vertSize, const void* indData, size_t indSize, size_t indCount, const VertexFormat& format);
 
 	//
 	// Render Manager

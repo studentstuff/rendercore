@@ -116,8 +116,8 @@ namespace Render
 
 	struct VertexArrayGL : VertexArray
 	{
-		VertexArrayGL(const void* vertData, size_t vertSize, const void* indData, size_t indSize, size_t indCount) : 
-			VertexArray(vertData, vertSize, indData, indSize, indCount)
+		VertexArrayGL(const void* vertData, size_t vertSize, const void* indData, size_t indSize, size_t indCount, const VertexFormat& format) : 
+			VertexArray(vertData, vertSize, indData, indSize, indCount, format)
 		{
 			glGenVertexArrays(1, &glVao);
 			glBindVertexArray(glVao);
@@ -127,11 +127,11 @@ namespace Render
 			glBindBuffer(GL_ARRAY_BUFFER, glVbo);
 			glBufferData(GL_ARRAY_BUFFER, vertSize, vertData, GL_STATIC_DRAW);
 
-			glEnableVertexAttribArray(0);
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 5, NULL);
-
-			glEnableVertexAttribArray(1);
-			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 5, GL_OFFSET(sizeof(float) * 3));
+			for (int i = 0; i < format.GetNumComponents(); i++)
+			{
+				glEnableVertexAttribArray(i);
+				glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, format.GetByteSize(), GL_OFFSET(format.GetComponentByteOffset(i)));
+			}
 
 			GLuint glIbo;
 			glGenBuffers(1, &glIbo);
@@ -181,8 +181,8 @@ namespace Render
 		return std::make_shared<TextureGL>(desc);
 	}
 
-	VertexArrayPtr CreateVertexArray(const void* vertData, size_t vertSize, const void* indData, size_t indSize, size_t indCount)
+	VertexArrayPtr CreateVertexArray(const void* vertData, size_t vertSize, const void* indData, size_t indSize, size_t indCount, const VertexFormat& format)
 	{
-		return std::make_shared<VertexArrayGL>(vertData, vertSize, indData, indSize, indCount);
+		return std::make_shared<VertexArrayGL>(vertData, vertSize, indData, indSize, indCount, format);
 	}
 }

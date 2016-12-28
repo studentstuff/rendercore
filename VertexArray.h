@@ -18,7 +18,7 @@ struct Vertex
 	}
 };
 
-enum struct ElementType : uint16_t
+enum struct ComponentType : uint16_t
 {
 	Float,
 	Float2,
@@ -26,7 +26,7 @@ enum struct ElementType : uint16_t
 	Float4
 };
 
-enum struct ElementUsage : uint16_t
+enum struct ComponentUsage : uint16_t
 {
 	Position,
 	Uv
@@ -34,25 +34,25 @@ enum struct ElementUsage : uint16_t
 
 struct VertexComponent
 {
-	VertexComponent();
-	VertexComponent(ElementUsage u, ElementType t) : usage(u), type(t) {}
+	VertexComponent() {}
+	VertexComponent(ComponentUsage u, ComponentType t) : usage(u), type(t) {}
 
-	ElementUsage Usage() const { return usage; }
-	ElementType Type() const { return type; }
+	ComponentUsage Usage() const { return usage; }
+	ComponentType Type() const { return type; }
 	int32_t GetByteSize() const 
 	{ 
 		switch (type)
 		{
-		case ElementType::Float:
+		case ComponentType::Float:
 			return 4;
 			break;
-		case ElementType::Float2:
+		case ComponentType::Float2:
 			return 8;
 			break;
-		case ElementType::Float3:
+		case ComponentType::Float3:
 			return 12;
 			break;
-		case ElementType::Float4:
+		case ComponentType::Float4:
 			return 16;
 			break;
 		default:
@@ -61,8 +61,8 @@ struct VertexComponent
 	}
 
 private:
-	ElementUsage usage;
-	ElementType type;
+	ComponentUsage usage;
+	ComponentType type;
 };
 
 struct VertexFormat
@@ -71,10 +71,9 @@ struct VertexFormat
 
 	void Add(const VertexComponent& comp)
 	{
-		int32_t num = this->GetNumComponents();
 		comps[num++] = comp;
 	}
-	void Add(ElementUsage u, ElementType t)
+	void Add(ComponentUsage u, ComponentType t)
 	{
 		Add(VertexComponent(u, t));
 	}
@@ -104,16 +103,16 @@ struct VertexFormat
 private:
 	enum
 	{
-		MaxNumVertexComponents
+		MaxNumVertexComponents = 16
 	};
 
 	std::array<VertexComponent, MaxNumVertexComponents> comps;
-	int32_t num;
+	int32_t num = 0;
 };
 
 struct VertexArray
 {
-	VertexArray(const void* vertData, size_t vertSize, const void* indData, size_t indSize, size_t indCount) : indiciesCount(indCount){}
+	VertexArray(const void* vertData, size_t vertSize, const void* indData, size_t indSize, size_t indCount, const VertexFormat& format) : indiciesCount(indCount){}
 	virtual ~VertexArray() {}
 	uint32_t indiciesCount;
 };

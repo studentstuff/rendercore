@@ -62,7 +62,11 @@ static Render::RenderObject* CreateCubeRO(float size, ProgramPtr program)
 		20,23,21, 21,23,22  // right
 	};
 
-	VertexArrayPtr vertexArray = Render::CreateVertexArray(vertices, sizeof(vertices), indicies, sizeof(indicies), 36);
+	VertexFormat format;
+	format.Add(ComponentUsage::Position, ComponentType::Float3);
+	format.Add(ComponentUsage::Uv, ComponentType::Float2);
+
+	VertexArrayPtr vertexArray = Render::CreateVertexArray(vertices, sizeof(vertices), indicies, sizeof(indicies), 36, format);
 	return new Render::RenderObject(vertexArray, program);
 }
 
